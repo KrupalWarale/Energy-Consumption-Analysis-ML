@@ -3,7 +3,10 @@
 This web application for predicting household energy consumption using multiple machine learning models with interactive visualizations and real-time comparison capabilities.
 
 ## Overview
-[![Watch the video](https://static.vecteezy.com/system/resources/previews/036/084/277/non_2x/green-energy-and-power-saving-concept-sustainable-growth-strategy-of-green-energy-resources-and-co2-emission-reduction-characteristics-of-electrical-energy-use-electricity-use-flat-vector.jpg)](https://youtu.be/3MLsbTdZUfM)
+<video width="600" controls>
+  <source src="Energy-Consumption-Prediction.mp4" type="video/mp4">
+</video>
+
 
 
 This project implements a sophisticated machine learning system that compares 6 different models (3 regression-based and 3 deep learning-based) to forecast household energy consumption based on environmental factors and historical usage patterns. The web interface provides interactive visualizations and metrics to help users understand model performance and prediction accuracy.
