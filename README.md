@@ -3,7 +3,10 @@
 This web application for predicting household energy consumption using multiple machine learning models with interactive visualizations and real-time comparison capabilities.
 
 ## Overview
-<iframe src="https://drive.google.com/file/d/1a2b3c4d5e6f7g8h9/preview" width="640" height="480" allow="autoplay"></iframe>
+
+
+https://github.com/user-attachments/assets/082f7fb8-2771-4446-9bcd-45e2ed3b3f95
+
 
 
 
