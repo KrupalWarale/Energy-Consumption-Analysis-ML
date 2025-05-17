@@ -1,0 +1,1450 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Energy Consumption Prediction</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        :root {
+            --primary-color: #1976D2;
+            --secondary-color: #64B5F6;
+            --success-color: #4CAF50;
+            --warning-color: #FFC107;
+            --danger-color: #F44336;
+            --dark-color: #263238;
+            --light-color: #ECEFF1;
+        }
+        
+        body {
+            padding-top: 0;
+            background-color: #f8f9fa;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            color: var(--dark-color);
+            scroll-behavior: smooth;
+        }
+        
+        .card {
+            margin-bottom: 20px;
+            box-shadow: 0 6px 10px rgba(0, 0, 0, 0.08);
+            border: none;
+            border-radius: 10px;
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 12px 20px rgba(0, 0, 0, 0.12);
+        }
+        
+        .card-header {
+            background-color: rgba(25, 118, 210, 0.05);
+            border-bottom: 1px solid rgba(25, 118, 210, 0.1);
+            font-weight: 600;
+        }
+        
+        .metrics-card {
+            text-align: center;
+        }
+        
+        .metric-value {
+            font-size: 24px;
+            font-weight: bold;
+            transition: color 0.3s ease;
+        }
+        
+        .metric-label {
+            font-size: 14px;
+            color: #78909C;
+            font-weight: 500;
+        }
+        
+        #loading {
+            display: none;
+            text-align: center;
+            margin: 20px 0;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1976D2 0%, #64B5F6 100%);
+            color: white;
+            padding: 15px 0;
+            margin-bottom: 20px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header h1 {
+            font-size: 1.8rem;
+            margin-bottom: 5px;
+        }
+        
+        .header p {
+            margin-bottom: 0;
+            font-size: 1rem;
+            opacity: 0.9;
+        }
+        
+        .status-badge {
+            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            margin-left: 12px;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .model-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .model-card::after {
+            content: '';
+            position: absolute;
+            width: 5px;
+            height: 0;
+            left: 0;
+            top: 0;
+            background-color: var(--primary-color);
+            transition: height 0.3s ease;
+        }
+        
+        .model-card:hover::after {
+            height: 100%;
+        }
+        
+        .model-card.selected {
+            border: 2px solid var(--primary-color);
+            background-color: rgba(25, 118, 210, 0.05);
+        }
+        
+        .model-card.selected::after {
+            height: 100%;
+        }
+        
+        .model-type-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 12px;
+            z-index: 1;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            box-shadow: 0 2px 5px rgba(25, 118, 210, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background-color: #1565C0;
+            border-color: #1565C0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(25, 118, 210, 0.4);
+        }
+        
+        .form-select {
+            border-radius: 8px;
+            padding: 10px;
+            border-color: #CFD8DC;
+        }
+        
+        .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(25, 118, 210, 0.25);
+        }
+        
+        /* Full Screen Button and Container */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            margin-bottom: 20px;
+            min-height: 400px; /* Set minimum height to ensure chart is visible */
+            background-color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 8px rgba(0,0,0,0.1);
+            padding: 20px;
+        }
+        
+        .popup-btn {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .popup-btn:hover {
+            background-color: rgba(25, 118, 210, 0.2);
+        }
+        
+        .loading-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(255, 255, 255, 0.8);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 10;
+            border-radius: 8px;
+        }
+        
+        .spinner {
+            border: 5px solid #f3f3f3;
+            border-top: 5px solid #3498db;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .chart-error {
+            color: #721c24;
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .chart-warning {
+            color: #856404;
+            background-color: #fff3cd;
+            border: 1px solid #ffeeba;
+            border-radius: 5px;
+            padding: 10px;
+            margin: 10px 0;
+            text-align: center;
+        }
+        
+        .control-panel {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            margin-bottom: 20px;
+            align-items: center;
+        }
+        
+        .chart-title {
+            font-size: 18px;
+            font-weight: bold;
+            margin-bottom: 15px;
+            color: #333;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            margin-left: auto;
+        }
+        
+        .btn-chart-action {
+            padding: 5px 10px;
+            font-size: 14px;
+            border-radius: 4px;
+            cursor: pointer;
+            border: none;
+            background: #f8f9fa;
+            color: #495057;
+            transition: all 0.2s;
+        }
+        
+        .btn-chart-action:hover {
+            background: #e9ecef;
+        }
+        
+        .btn-chart-action i {
+            margin-right: 5px;
+        }
+        
+        .row {
+            margin-bottom: 30px;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #1976D2 0%, #64B5F6 100%);
+            color: white;
+            padding: 30px 0;
+            margin-bottom: 40px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+        
+        .status-badge {
+            font-size: 14px;
+            padding: 6px 12px;
+            border-radius: 20px;
+            margin-left: 12px;
+            font-weight: 500;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .model-card {
+            cursor: pointer;
+            transition: all 0.3s ease;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .model-card::after {
+            content: '';
+            position: absolute;
+            width: 5px;
+            height: 0;
+            left: 0;
+            top: 0;
+            background-color: var(--primary-color);
+            transition: height 0.3s ease;
+        }
+        
+        .model-card:hover::after {
+            height: 100%;
+        }
+        
+        .model-card.selected {
+            border: 2px solid var(--primary-color);
+            background-color: rgba(25, 118, 210, 0.05);
+        }
+        
+        .model-card.selected::after {
+            height: 100%;
+        }
+        
+        .model-type-badge {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            font-size: 12px;
+            z-index: 1;
+        }
+        
+        .btn-primary {
+            background-color: var(--primary-color);
+            border-color: var(--primary-color);
+            box-shadow: 0 2px 5px rgba(25, 118, 210, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .btn-primary:hover {
+            background-color: #1565C0;
+            border-color: #1565C0;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(25, 118, 210, 0.4);
+        }
+        
+        .form-select {
+            border-radius: 8px;
+            padding: 10px;
+            border-color: #CFD8DC;
+        }
+        
+        .form-select:focus {
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 0.25rem rgba(25, 118, 210, 0.25);
+        }
+        
+        /* Full Screen Button and Container */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            margin-bottom: 20px;
+        }
+        
+        .fullscreen-btn {
+            display: none;
+        }
+        
+        .fullscreen {
+            display: none;
+        }
+        
+        /* Popup window styles */
+        .popup-btn {
+            position: absolute;
+            top: 10px;
+            right: 50px;
+            background-color: rgba(255, 255, 255, 0.8);
+            border: none;
+            border-radius: 5px;
+            padding: 5px 10px;
+            cursor: pointer;
+            z-index: 10;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.1);
+        }
+        
+        .popup-btn:hover {
+            background-color: rgba(25, 118, 210, 0.2);
+        }
+        
+        /* Modal popup */
+        .modal-backdrop {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.7);
+            z-index: 1000;
+            display: none;
+            justify-content: center;
+            align-items: center;
+            opacity: 0;
+            transition: opacity 0.3s ease;
+        }
+        
+        .modal-backdrop.show {
+            opacity: 1;
+            display: flex;
+        }
+        
+        .modal-content {
+            background-color: white;
+            width: 90%;
+            max-width: 1200px;
+            height: 80%;
+            border-radius: 10px;
+            box-shadow: 0 0 30px rgba(0, 0, 0, 0.5);
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            transform: scale(0.9);
+            transition: transform 0.3s ease;
+        }
+        
+        .modal-backdrop.show .modal-content {
+            transform: scale(1);
+        }
+        
+        .modal-header {
+            padding: 15px 20px;
+            border-bottom: 1px solid #e0e0e0;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            background-color: #f8f9fa;
+            border-top-left-radius: 10px;
+            border-top-right-radius: 10px;
+        }
+        
+        .modal-title {
+            font-size: 1.2rem;
+            font-weight: bold;
+            color: var(--primary-color);
+        }
+        
+        .modal-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            cursor: pointer;
+            color: #777;
+            transition: color 0.2s ease;
+        }
+        
+        .modal-close:hover {
+            color: var(--danger-color);
+        }
+        
+        .modal-body {
+            padding: 20px;
+            flex: 1;
+            overflow: auto;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background-color: white;
+        }
+        
+        .modal-image {
+            max-width: 100%;
+            max-height: 100%;
+            object-fit: contain;
+        }
+        
+        .modal-chart-container {
+            width: 100%;
+            height: 100%;
+            min-height: 400px;
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(20px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+        
+        #visualizationSection {
+            opacity: 0;
+            transform: translateY(20px);
+            transition: all 0.5s ease;
+        }
+        
+        #visualizationSection.visible {
+            opacity: 1;
+            transform: translateY(0);
+        }
+    </style>
+</head>
+<body data-models-exist="{% if models_exist %}true{% else %}false{% endif %}">
+    <div class="header">
+        <div class="container">
+            <h1 class="text-center">Energy Consumption Prediction 
+                {% if models_exist %}
+                <span class="status-badge bg-success">Models Ready</span>
+                {% else %}
+                <span class="status-badge bg-warning">No Models Found</span>
+                {% endif %}
+            </h1>
+            <p class="text-center">Compare 6 different models for energy usage prediction</p>
+        </div>
+    </div>
+
+    <div class="container">
+        {% if not models_exist %}
+        <div class="row mb-4 fade-in">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title">Models Not Found</h5>
+                        <p class="alert alert-warning">Pre-trained models not found. Please run <code>python train_and_save_model.py</code> first to train and save all models.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% else %}
+        <div class="row mb-4 fade-in" style="animation-delay: 0.1s">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-brain me-2"></i>Available Models</h5>
+                       
+                    </div>
+                    <div class="card-body">
+                        <h6 class="mb-3"><i class="fas fa-calculator me-2"></i>Regression Models</h6>
+                        <div class="row" id="regressionModels">
+                            <!-- Regression models will be displayed here dynamically -->
+                        </div>
+                        
+                        <hr class="my-4">
+                        
+                        <h6 class="mb-3"><i class="fas fa-network-wired me-2"></i>Deep Learning Models</h6>
+                        <div class="row" id="deepLearningModels">
+                            <!-- Deep learning models will be displayed here dynamically -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row mb-4 fade-in">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-body">
+                        <h5 class="card-title"><i class="fas fa-chart-line me-2"></i>Model Comparison</h5>
+                        <p>Compare predictions from all trained models for energy consumption prediction.</p>
+                        <button id="predictBtn" class="btn btn-primary">
+                            <i class="fas fa-play me-2"></i>Generate Predictions
+                        </button>
+                        <div id="loading" class="mt-3">
+                            <div class="spinner-border text-primary" role="status">
+                                <span class="visually-hidden">Loading...</span>
+                            </div>
+                            <p class="mt-2">Generating predictions for all models...</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="row" id="visualizationSection" style="display: none;">
+            <div class="col-md-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5><i class="fas fa-chart-bar me-2"></i>Energy Consumption Visualization</h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <select id="plotModelSelector" class="form-select">
+                                <option value="">All Models (Top 3)</option>
+                                <!-- Model options will be added dynamically -->
+                            </select>
+                        </div>
+                        
+                        <div class="chart-container text-center mb-4">
+                            <button class="popup-btn" id="imgPopupBtn">
+                                <i class="fas fa-external-link-alt"></i>
+                            </button>
+                            <img id="plotImage" class="img-fluid" alt="Energy Consumption Plot" style="max-width: 100%;">
+                        </div>
+                        
+                        <div class="chart-container">
+                            <button class="popup-btn" id="chartPopupBtn">
+                                <i class="fas fa-external-link-alt"></i>
+                            </button>
+                            <canvas id="energyChart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        {% endif %}
+    </div>
+
+    <!-- Modal Popups -->
+    <div class="modal-backdrop" id="imageModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Energy Consumption Plot</div>
+                <button class="modal-close" id="closeImageModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <img id="modalImage" class="modal-image" src="" alt="Energy Consumption Plot">
+            </div>
+        </div>
+    </div>
+
+    <div class="modal-backdrop" id="chartModal">
+        <div class="modal-content">
+            <div class="modal-header">
+                <div class="modal-title">Energy Consumption Chart</div>
+                <button class="modal-close" id="closeChartModal">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-chart-container">
+                    <canvas id="modalChart"></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0-alpha1/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            // Get models exist from data attribute
+            var modelsExist = document.body.getAttribute('data-models-exist') === 'true';
+            
+            // Global variables
+            let currentModels = {};
+            let chart = null;
+            let chartContainer = document.querySelector('.chart-container canvas').parentNode;
+            let imgContainer = document.querySelector('.chart-container img').parentNode;
+            let popupChartInstance = null;
+            
+            // Get modal elements
+            const imageModal = document.getElementById('imageModal');
+            const chartModal = document.getElementById('chartModal');
+            const modalImage = document.getElementById('modalImage');
+            const modalChart = document.getElementById('modalChart');
+            
+            // Helper function for smooth scrolling
+            function scrollToElement(element) {
+                window.scrollTo({
+                    behavior: 'smooth',
+                    top: element.offsetTop - 20
+                });
+            }
+            
+            // Remove the fullscreen functionality
+            function toggleFullscreen(container) {
+                // This function is kept for compatibility but does nothing now
+                console.log("Fullscreen functionality has been removed");
+            }
+            
+            // Popup functionality
+            function openImagePopup() {
+                if (document.getElementById('plotImage').src) {
+                    modalImage.src = document.getElementById('plotImage').src;
+                    imageModal.classList.add('show');
+                    document.body.style.overflow = 'hidden'; // Prevent scrolling
+                }
+            }
+            
+            function openChartPopup() {
+                // First ensure we have a chart to display
+                if (!chart) {
+                    console.error("No chart available to display in popup");
+                    return;
+                }
+                
+                chartModal.classList.add('show');
+                document.body.style.overflow = 'hidden'; // Prevent scrolling
+                
+                // Create a new chart in the modal with a short delay
+                setTimeout(() => {
+                    try {
+                        // Clean up previous chart instance if exists
+                        if (popupChartInstance) {
+                            popupChartInstance.destroy();
+                        }
+                        
+                        // Create a new configuration instead of trying to clone the existing one
+                        // This avoids issues with circular references and undefined properties
+                        const ctx = modalChart.getContext('2d');
+                        
+                        // Get data from original chart
+                        const datasets = chart.data.datasets.map(ds => {
+                            return {
+                                label: ds.label,
+                                data: ds.data,
+                                borderColor: ds.borderColor,
+                                backgroundColor: ds.backgroundColor,
+                                borderWidth: ds.borderWidth,
+                                pointRadius: ds.pointRadius || 2,
+                                pointHoverRadius: ds.pointHoverRadius || 5,
+                                fill: ds.fill || false,
+                                tension: ds.tension || 0.3,
+                                borderDash: ds.borderDash || []
+                            };
+                        });
+                        
+                        // Create a new chart with proper configuration
+                        popupChartInstance = new Chart(ctx, {
+                            type: 'line',
+                            data: {
+                                labels: chart.data.labels,
+                                datasets: datasets
+                            },
+                            options: {
+                                responsive: true,
+                                maintainAspectRatio: false,
+                                interaction: {
+                                    mode: 'index',
+                                    intersect: false,
+                                },
+                                plugins: {
+                                    legend: {
+                                        position: 'top',
+                                        labels: {
+                                            usePointStyle: true,
+                                            padding: 20
+                                        }
+                                    },
+                                    tooltip: {
+                                        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                        padding: 12,
+                                        titleFont: {
+                                            size: 14,
+                                            weight: 'bold'
+                                        },
+                                        bodyFont: {
+                                            size: 13
+                                        }
+                                    }
+                                },
+                                scales: {
+                                    x: {
+                                        display: true,
+                                        title: {
+                                            display: true,
+                                            text: 'Time',
+                                            padding: {top: 10, bottom: 0},
+                                            font: {
+                                                size: 14,
+                                                weight: 'bold'
+                                            }
+                                        },
+                                        ticks: {
+                                            maxTicksLimit: 10,
+                                            maxRotation: 30,
+                                            minRotation: 0
+                                        },
+                                        grid: {
+                                            display: false
+                                        }
+                                    },
+                                    y: {
+                                        display: true,
+                                        title: {
+                                            display: true,
+                                            text: 'Energy Consumption (kW)',
+                                            padding: {top: 0, bottom: 10},
+                                            font: {
+                                                size: 14,
+                                                weight: 'bold'
+                                            }
+                                        },
+                                        grid: {
+                                            color: 'rgba(0, 0, 0, 0.05)'
+                                        }
+                                    }
+                                },
+                                animation: {
+                                    duration: 1000,
+                                    easing: 'easeOutQuart'
+                                }
+                            }
+                        });
+                    } catch (error) {
+                        console.error("Error creating popup chart:", error);
+                        const modalChartContainer = document.querySelector('.modal-chart-container');
+                        modalChartContainer.innerHTML = `<div class="alert alert-danger">Error creating chart: ${error.message}</div>`;
+                    }
+                }, 300);
+            }
+            
+            function closeModals() {
+                imageModal.classList.remove('show');
+                chartModal.classList.remove('show');
+                document.body.style.overflow = ''; // Restore scrolling
+            }
+            
+            // Add event listeners for popup buttons
+            document.getElementById('imgPopupBtn').addEventListener('click', openImagePopup);
+            document.getElementById('chartPopupBtn').addEventListener('click', openChartPopup);
+            document.getElementById('closeImageModal').addEventListener('click', closeModals);
+            document.getElementById('closeChartModal').addEventListener('click', closeModals);
+            
+            // Close modals when clicking outside content
+            imageModal.addEventListener('click', function(e) {
+                if (e.target === imageModal) {
+                    closeModals();
+                }
+            });
+            
+            chartModal.addEventListener('click', function(e) {
+                if (e.target === chartModal) {
+                    closeModals();
+                }
+            });
+            
+            // Close modals with Escape key
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'Escape') {
+                    closeModals();
+                }
+            });
+            
+            if (modelsExist) {
+                // Load available models
+                fetchAvailableModels();
+                
+                document.getElementById('predictBtn').addEventListener('click', function() {
+                    // Show loading spinner
+                    document.getElementById('loading').style.display = 'block';
+                    this.disabled = true;
+                    
+                    // Call the predict endpoint
+                    fetch('/predict')
+                        .then(response => response.json())
+                        .then(data => {
+                            // Hide loading spinner
+                            document.getElementById('loading').style.display = 'none';
+                            this.disabled = false;
+                            
+                            if (data.status === 'success') {
+                                // Show visualization section with animation
+                                const visSection = document.getElementById('visualizationSection');
+                                visSection.style.display = 'block';
+                                
+                                // Add a tiny delay before adding the visible class for animation
+                                setTimeout(() => {
+                                    visSection.classList.add('visible');
+                                    // Scroll to visualization section
+                                    scrollToElement(visSection);
+                                }, 50);
+                                
+                                // Load the plot image
+                                loadPlot();
+                                
+                                // Load chart data with all models
+                                loadChartData();
+                            } else if (data.error) {
+                                alert('Error: ' + data.error);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                            document.getElementById('loading').style.display = 'none';
+                            this.disabled = false;
+                            alert('An error occurred while making predictions.');
+                        });
+                });
+                
+                // Model selector for plots
+                document.getElementById('plotModelSelector').addEventListener('change', function() {
+                    loadPlot(this.value);
+                    updateChart(this.value);
+                });
+            }
+            
+            function fetchAvailableModels() {
+                fetch('/api/models')
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.error) {
+                            console.error('Error loading models:', data.error);
+                            return;
+                        }
+                        
+                        currentModels = data;
+                        displayModels(data);
+                        populateModelSelector(data);
+                    })
+                    .catch(error => {
+                        console.error('Error fetching models:', error);
+                    });
+            }
+            
+            function displayModels(models) {
+                const regressionContainer = document.getElementById('regressionModels');
+                const deepLearningContainer = document.getElementById('deepLearningModels');
+                
+                regressionContainer.innerHTML = '';
+                deepLearningContainer.innerHTML = '';
+                
+                let delay = 0;
+                
+                for (const [name, info] of Object.entries(models)) {
+                    const modelCard = createModelCard(name, info, delay);
+                    delay += 0.05; // Increment delay for staggered animation
+                    
+                    if (info.type === 'regression') {
+                        regressionContainer.appendChild(modelCard);
+                    } else if (info.type === 'deep_learning') {
+                        deepLearningContainer.appendChild(modelCard);
+                    }
+                }
+                
+                // Add click event to all model cards
+                document.querySelectorAll('.model-card').forEach(card => {
+                    card.addEventListener('click', function() {
+                        const modelName = this.getAttribute('data-model');
+                        
+                        // Toggle selection in UI
+                        document.querySelectorAll('.model-card').forEach(c => {
+                            c.classList.remove('selected');
+                        });
+                        this.classList.add('selected');
+                        
+                        // Update plot selector
+                        document.getElementById('plotModelSelector').value = modelName;
+                        
+                        // Update the plot if visualization section is visible
+                        if (document.getElementById('visualizationSection').style.display !== 'none') {
+                            loadPlot(modelName);
+                            updateChart(modelName);
+                            
+                            // Scroll to visualization section
+                            scrollToElement(document.getElementById('visualizationSection'));
+                        }
+                    });
+                });
+            }
+            
+            function createModelCard(name, info, delay) {
+                const col = document.createElement('div');
+                col.className = 'col-lg-4 col-md-6 mb-3 fade-in';
+                col.style.animationDelay = `${delay}s`;
+                
+                const card = document.createElement('div');
+                card.className = 'card model-card h-100';
+                card.setAttribute('data-model', name);
+                
+                // Create model type badge
+                const badge = document.createElement('span');
+                badge.className = info.type === 'regression' ? 
+                                 'badge bg-primary model-type-badge' : 
+                                 'badge bg-success model-type-badge';
+                badge.innerHTML = info.type === 'regression' ? 
+                                 '<i class="fas fa-calculator me-1"></i>Regression' : 
+                                 '<i class="fas fa-brain me-1"></i>Deep Learning';
+                
+                const cardBody = document.createElement('div');
+                cardBody.className = 'card-body';
+                
+                const title = document.createElement('h5');
+                title.className = 'card-title';
+                title.textContent = name;
+                
+                const metrics = document.createElement('div');
+                metrics.className = 'row mt-3';
+                
+                // R² metric
+                const r2Col = document.createElement('div');
+                r2Col.className = 'col-4';
+                const r2Value = document.createElement('div');
+                r2Value.className = 'metric-value text-success';
+                r2Value.textContent = info.metrics.r2;
+                const r2Label = document.createElement('div');
+                r2Label.className = 'metric-label';
+                r2Label.textContent = 'R²';
+                r2Col.appendChild(r2Value);
+                r2Col.appendChild(r2Label);
+                
+                // MSE metric
+                const mseCol = document.createElement('div');
+                mseCol.className = 'col-4';
+                const mseValue = document.createElement('div');
+                mseValue.className = 'metric-value text-danger';
+                mseValue.textContent = info.metrics.mse;
+                const mseLabel = document.createElement('div');
+                mseLabel.className = 'metric-label';
+                mseLabel.textContent = 'MSE';
+                mseCol.appendChild(mseValue);
+                mseCol.appendChild(mseLabel);
+                
+                // MAE metric
+                const maeCol = document.createElement('div');
+                maeCol.className = 'col-4';
+                const maeValue = document.createElement('div');
+                maeValue.className = 'metric-value text-primary';
+                maeValue.textContent = info.metrics.mae;
+                const maeLabel = document.createElement('div');
+                maeLabel.className = 'metric-label';
+                maeLabel.textContent = 'MAE';
+                maeCol.appendChild(maeValue);
+                maeCol.appendChild(maeLabel);
+                
+                metrics.appendChild(r2Col);
+                metrics.appendChild(mseCol);
+                metrics.appendChild(maeCol);
+                
+                cardBody.appendChild(title);
+                cardBody.appendChild(metrics);
+                
+                card.appendChild(badge);
+                card.appendChild(cardBody);
+                col.appendChild(card);
+                
+                return col;
+            }
+            
+            function populateModelSelector(models) {
+                const selector = document.getElementById('plotModelSelector');
+                
+                // Clear existing options except the first one
+                while (selector.options.length > 1) {
+                    selector.remove(1);
+                }
+                
+                // Add options for each model
+                for (const name of Object.keys(models)) {
+                    const option = document.createElement('option');
+                    option.value = name;
+                    option.textContent = name;
+                    selector.appendChild(option);
+                }
+            }
+            
+            function loadPlot(modelName = '') {
+                const url = modelName ? `/plot?model=${encodeURIComponent(modelName)}` : '/plot';
+                
+                fetch(url)
+                        .then(response => response.json())
+                        .then(data => {
+                            if (data.plot) {
+                                document.getElementById('plotImage').src = 'data:image/png;base64,' + data.plot;
+                            } else if (data.error) {
+                                console.error('Error loading plot:', data.error);
+                            }
+                        })
+                        .catch(error => {
+                            console.error('Error:', error);
+                        });
+                }
+                
+            function loadChartData(modelName = '') {
+                const url = modelName ? `/api/data?model=${encodeURIComponent(modelName)}` : '/api/data';
+                
+                // Show loading indicator for chart
+                const chartContainer = document.querySelector('.chart-container canvas').parentNode;
+                const loadingIndicator = document.createElement('div');
+                loadingIndicator.className = 'text-center p-3';
+                loadingIndicator.innerHTML = '<div class="spinner-border text-primary" role="status"></div><p class="mt-2">Loading chart data...</p>';
+                loadingIndicator.id = 'chartLoadingIndicator';
+                
+                // Remove existing loading indicator if any
+                const existingIndicator = document.getElementById('chartLoadingIndicator');
+                if (existingIndicator) {
+                    existingIndicator.remove();
+                }
+                
+                // Add loading indicator before the canvas
+                const canvas = document.getElementById('energyChart');
+                chartContainer.insertBefore(loadingIndicator, canvas);
+                
+                fetch(url)
+                    .then(response => {
+                        if (!response.ok) {
+                            throw new Error(`Network response was not ok: ${response.status}`);
+                        }
+                        return response.json();
+                    })
+                        .then(data => {
+                        // Remove loading indicator
+                        loadingIndicator.remove();
+                        
+                        if (data.error) {
+                            console.error('Error loading data:', data.error);
+                            chartContainer.innerHTML = `<div class="alert alert-danger">Error loading chart data: ${data.error}</div>`;
+                            return;
+                        }
+                        
+                        try {
+                            if (modelName && data.timestamps && data.actual && data.predicted) {
+                                // Single model data
+                                createOrUpdateChart(data.timestamps, data.actual, data.predicted, modelName);
+                            } else if (data.timestamps && data.actual && data.predictions) {
+                                // Multiple models data
+                                createMultiModelChart(data.timestamps, data.actual, data.predictions);
+                            } else {
+                                console.error('Invalid data format received:', data);
+                                chartContainer.innerHTML = '<div class="alert alert-warning">Invalid data format received from server</div>';
+                            }
+                        } catch (error) {
+                            console.error('Error creating chart:', error);
+                            chartContainer.innerHTML = `<div class="alert alert-danger">Error creating chart: ${error.message}</div>`;
+                        }
+                    })
+                    .catch(error => {
+                        // Remove loading indicator
+                        loadingIndicator.remove();
+                        
+                        console.error('Error fetching chart data:', error);
+                        chartContainer.innerHTML = `<div class="alert alert-danger">Failed to load chart data: ${error.message}</div>`;
+                    });
+            }
+            
+            function updateChart(modelName) {
+                if (!modelName) {
+                    loadChartData(); // Load all models
+                    return;
+                }
+                
+                loadChartData(modelName);
+            }
+            
+            function createOrUpdateChart(timestamps, actual, predicted, modelName) {
+                try {
+                                // Get only a subset of data points for better visualization
+                    const step = Math.max(1, Math.floor(timestamps.length / 100));
+                    const filteredTimestamps = timestamps.filter((_, i) => i % step === 0);
+                    const filteredActual = actual.filter((_, i) => i % step === 0);
+                    const filteredPredicted = predicted.filter((_, i) => i % step === 0);
+                    
+                    // Make sure we have a valid canvas element
+                    const canvasElement = document.getElementById('energyChart');
+                    if (!canvasElement) {
+                        console.error('Canvas element not found');
+                        return;
+                    }
+                    
+                    // Destroy previous chart if exists
+                    if (chart) {
+                        chart.destroy();
+                    }
+                    
+                    // Create new chart with improved styling
+                    const ctx = canvasElement.getContext('2d');
+                    
+                    // Set global Chart.js defaults
+                    Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+                    Chart.defaults.font.size = 12;
+                    
+                    // Create chart with proper error handling
+                    chart = new Chart(ctx, {
+                                    type: 'line',
+                                    data: {
+                            labels: filteredTimestamps,
+                                        datasets: [
+                                            {
+                                                label: 'Actual Energy Consumption',
+                                    data: filteredActual,
+                                                borderColor: 'rgb(54, 162, 235)',
+                                                backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                                    borderWidth: 3,
+                                    pointRadius: 2,
+                                    pointHoverRadius: 5,
+                                    fill: true,
+                                    tension: 0.3
+                                },
+                                {
+                                    label: `${modelName} Prediction`,
+                                    data: filteredPredicted,
+                                                borderColor: 'rgb(255, 99, 132)',
+                                                backgroundColor: 'rgba(255, 99, 132, 0.1)',
+                                                borderWidth: 2,
+                                    pointRadius: 2,
+                                    pointHoverRadius: 5,
+                                                borderDash: [5, 5],
+                                    fill: false,
+                                    tension: 0.3
+                                            }
+                                        ]
+                                    },
+                                    options: {
+                                        responsive: true,
+                            maintainAspectRatio: false,
+                                        interaction: {
+                                            mode: 'index',
+                                            intersect: false,
+                                        },
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                    labels: {
+                                        usePointStyle: true,
+                                        padding: 20
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    padding: 12,
+                                    titleFont: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    },
+                                    bodyFont: {
+                                        size: 13
+                                    }
+                                }
+                            },
+                                        scales: {
+                                            x: {
+                                                display: true,
+                                                title: {
+                                                    display: true,
+                                        text: 'Time',
+                                        padding: {top: 10, bottom: 0},
+                                        font: {
+                                            size: 14,
+                                            weight: 'bold'
+                                        }
+                                                },
+                                                ticks: {
+                                        maxTicksLimit: 10,
+                                        maxRotation: 30,
+                                        minRotation: 0
+                                    },
+                                    grid: {
+                                        display: false
+                                                }
+                                            },
+                                            y: {
+                                                display: true,
+                                                title: {
+                                                    display: true,
+                                        text: 'Energy Consumption (kW)',
+                                        padding: {top: 0, bottom: 10},
+                                        font: {
+                                            size: 14,
+                                            weight: 'bold'
+                                        }
+                                    },
+                                    grid: {
+                                        color: 'rgba(0, 0, 0, 0.05)'
+                                    }
+                                }
+                            },
+                            animation: {
+                                duration: 1000,
+                                easing: 'easeOutQuart'
+                                        }
+                                    }
+                                });
+                    
+                    // Let the chart be visible with a minimum height
+                    canvasElement.parentNode.style.minHeight = '400px';
+                } catch (error) {
+                    console.error('Error creating chart:', error);
+                    document.querySelector('.chart-container').innerHTML = 
+                        `<div class="alert alert-danger">Error creating chart: ${error.message}</div>`;
+                }
+            }
+            
+            function createMultiModelChart(timestamps, actual, predictions) {
+                try {
+                    // Get only a subset of data points for better visualization
+                    const step = Math.max(1, Math.floor(timestamps.length / 100));
+                    const filteredTimestamps = timestamps.filter((_, i) => i % step === 0);
+                    const filteredActual = actual.filter((_, i) => i % step === 0);
+                    
+                    // Make sure we have data to display
+                    if (!filteredTimestamps.length || !filteredActual.length) {
+                        console.error('No data available for chart');
+                        document.querySelector('.chart-container').innerHTML = 
+                            '<div class="alert alert-warning">No data available for chart</div>';
+                        return;
+                    }
+                    
+                    // Create datasets array, starting with actual values
+                    const datasets = [{
+                        label: 'Actual Energy Consumption',
+                        data: filteredActual,
+                        borderColor: 'rgb(54, 162, 235)',
+                        backgroundColor: 'rgba(54, 162, 235, 0.1)',
+                        borderWidth: 3,
+                        pointRadius: 2,
+                        pointHoverRadius: 5,
+                        fill: true,
+                        tension: 0.3
+                    }];
+                    
+                    // Colors for different models
+                    const modelColors = [
+                        { border: 'rgb(255, 99, 132)', bg: 'rgba(255, 99, 132, 0.1)' },
+                        { border: 'rgb(75, 192, 192)', bg: 'rgba(75, 192, 192, 0.1)' },
+                        { border: 'rgb(255, 205, 86)', bg: 'rgba(255, 205, 86, 0.1)' },
+                        { border: 'rgb(153, 102, 255)', bg: 'rgba(153, 102, 255, 0.1)' },
+                        { border: 'rgb(201, 203, 207)', bg: 'rgba(201, 203, 207, 0.1)' }
+                    ];
+                    
+                    // Make sure predictions object exists and has keys
+                    if (!predictions || Object.keys(predictions).length === 0) {
+                        console.error('No prediction models available');
+                        // Still show the actual values even if no predictions
+                    } else {
+                        // Add up to 3 models
+                        const modelNames = Object.keys(predictions).slice(0, 3);
+                        
+                        modelNames.forEach((model, i) => {
+                            // Make sure this model has data
+                            if (!predictions[model] || !predictions[model].length) {
+                                console.warn(`No data available for model: ${model}`);
+                                return;
+                            }
+                            
+                            const filteredPredicted = predictions[model].filter((_, j) => j % step === 0);
+                            
+                            datasets.push({
+                                label: `${model} Prediction`,
+                                data: filteredPredicted,
+                                borderColor: modelColors[i].border,
+                                backgroundColor: modelColors[i].bg,
+                                borderWidth: 2,
+                                pointRadius: 2,
+                                pointHoverRadius: 5,
+                                borderDash: [5, 5],
+                                fill: false,
+                                tension: 0.3
+                            });
+                        });
+                    }
+                    
+                    // Make sure we have a valid canvas element
+                    const canvasElement = document.getElementById('energyChart');
+                    if (!canvasElement) {
+                        console.error('Canvas element not found');
+                        return;
+                    }
+                    
+                    // Destroy previous chart if exists
+                    if (chart) {
+                        chart.destroy();
+                    }
+                    
+                    // Create new chart
+                    const ctx = canvasElement.getContext('2d');
+                    Chart.defaults.font.family = "'Segoe UI', Tahoma, Geneva, Verdana, sans-serif";
+                    Chart.defaults.font.size = 12;
+                    
+                    chart = new Chart(ctx, {
+                        type: 'line',
+                        data: { labels: filteredTimestamps, datasets },
+                        options: {
+                            responsive: true,
+                            maintainAspectRatio: false,
+                            interaction: {
+                                mode: 'index',
+                                intersect: false,
+                            },
+                            plugins: {
+                                legend: {
+                                    position: 'top',
+                                    labels: {
+                                        usePointStyle: true,
+                                        padding: 20
+                                    }
+                                },
+                                tooltip: {
+                                    backgroundColor: 'rgba(0, 0, 0, 0.8)',
+                                    padding: 12,
+                                    titleFont: {
+                                        size: 14,
+                                        weight: 'bold'
+                                    },
+                                    bodyFont: {
+                                        size: 13
+                                    }
+                                }
+                            },
+                            scales: {
+                                x: {
+                                    display: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Time',
+                                        padding: {top: 10, bottom: 0},
+                                        font: {
+                                            size: 14,
+                                            weight: 'bold'
+                                        }
+                                    },
+                                    ticks: {
+                                        maxTicksLimit: 10,
+                                        maxRotation: 30,
+                                        minRotation: 0
+                                    },
+                                    grid: {
+                                        display: false
+                                    }
+                                },
+                                y: {
+                                    display: true,
+                                    title: {
+                                        display: true,
+                                        text: 'Energy Consumption (kW)',
+                                        padding: {top: 0, bottom: 10},
+                                        font: {
+                                            size: 14,
+                                            weight: 'bold'
+                                        }
+                                    },
+                                    grid: {
+                                        color: 'rgba(0, 0, 0, 0.05)'
+                                    }
+                                }
+                            },
+                            animation: {
+                                duration: 1000,
+                                easing: 'easeOutQuart'
+                            }
+                        }
+                    });
+                    
+                    // Let the chart be visible with a minimum height
+                    canvasElement.parentNode.style.minHeight = '400px';
+                } catch (error) {
+                    console.error('Error creating multi-model chart:', error);
+                    document.querySelector('.chart-container').innerHTML = 
+                        `<div class="alert alert-danger">Error creating multi-model chart: ${error.message}</div>`;
+                }
+            }
+        });
+    </script>
+</body>
+</html> 
