@@ -25,7 +25,7 @@ The project uses the HomeC.csv dataset, which contains comprehensive time-series
   - `windSpeed` - Wind speed measurement
   - `Solar [kW]` - Solar irradiance measurement
 
-- **Download Dataset**: [HomeC.csv (124.9 MB)]( <a href="https://drive.google.com/drive/u/2/folders/1SguX_Q28iCV0KrKY_rD6VyWrkt3eKXIM" target="_blank">HomeC.csv (124.9 MB)</a>)
+- **Download Dataset**: [HomeC.csv (124.9 MB)](https://drive.google.com/drive/u/2/folders/1SguX_Q28iCV0KrKY_rD6VyWrkt3eKXIM)
 - **Place the dataset** in the root directory of the project.
 
 ## Data Preprocessing
